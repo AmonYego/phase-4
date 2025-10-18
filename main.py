@@ -35,9 +35,11 @@ if lecture_file and pastpaper_file:
     GEMINI_API_KEY="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA"
     import google.generativeai as genai
 
-    genai.configure(GEMINI_API_KEY="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA")
+    genai.configure(api_key="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA")
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    #model = genai.GenerativeModel("gemini-1.5-flash")
+    #model = genai.GenerativeModel("gemini-1.0-pro")
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
 
     def compare_texts(lecture_text, past_paper_text):
