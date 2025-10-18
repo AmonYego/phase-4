@@ -1,8 +1,9 @@
 import streamlit as st
 
-st.set_page_config(page_title="AI Revision Coach", page_icon="🎓")
+st.set_page_config(page_title="ClassRoom AI", page_icon="🎓")
 
-st.title("🎓 AI Revision Coach (MVP)")
+st.title("ClassRoom AI")
+st.header("Your AI Revision Coach 🎓")
 st.write("Upload your notes and past papers to get AI-powered analysis and quizzes.")
 
 uploaded_notes = st.file_uploader("📘 Upload Notes (PDF)", type="pdf")
