@@ -5,14 +5,15 @@ import google.generativeai as genai
 st.set_page_config(page_title="ClassRoom AI", page_icon="🎓")
 
 st.title("ClassRoom AI")
-st.header("Your AI Revision Coach 🎓")
-st.write("Upload your notes and past papers to get AI-powered analysis and quizzes.")
+st.header("Ace Your Exams — Revise Like a Pro with AI")
+st.write("“Upload your class notes and past papers — our AI analyzes them, highlights the most tested topics, explains them simply, and generates practice questions to help you revise smarter.”")
 
-lecture_file = st.file_uploader("📘 Upload Notes (PDF)", type="pdf")
-pastpaper_file = st.file_uploader("📄 Upload Past Papers (PDF)", type="pdf")
+lecture_file = st.file_uploader("📘 Upload Lecture Notes (PDF)", type="pdf")
+pastpaper_file = st.file_uploader("📄 Upload Past Papers/Exams (PDF)", type="pdf")
 
 if lecture_file and pastpaper_file:
-    st.success("✅ Files uploaded successfully! Day 2 we’ll start analyzing them.")
+    st.success("✅ Files received. I’m now carefully analyzing your content—this may take a few seconds. ⏳")
+
 else:
     st.info("Please upload both files to continue.")
 
@@ -28,40 +29,142 @@ def extract_text(pdf):
 if lecture_file and pastpaper_file:
     lecture_text = extract_text(lecture_file)
     pastpaper_text = extract_text(pastpaper_file)
-
-    st.write("### Extracted Lecture Notes:")
-    st.write(lecture_text[:1000])  # preview first 1000 chars
-
-    GEMINI_API_KEY="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA"
-    import google.generativeai as genai
-
     genai.configure(api_key="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA")
-
-    #model = genai.GenerativeModel("gemini-1.5-flash")
-    #model = genai.GenerativeModel("gemini-1.0-pro")
     model = genai.GenerativeModel("gemini-2.5-flash")
 
 
-    def compare_texts(lecture_text, past_paper_text):
-        prompt = f"""
-        Compare the following two documents:
-        1. Lecture Notes:
-        {lecture_text[:2000]}
 
-        2. Past Paper:
-        {past_paper_text[:2000]}
+def extract_study_topics(lecture_text, pastpaper_text):
+    prompt = f"""
+You are an educational AI assistant. Compare the following documents (lecture notes and past papers) and perform the following:
 
-        Identify the most repeated and important concepts for students to study.
-        Then explain each concept simply.
-        """
-        response = model.generate_content(prompt)
-        return response.text
+1. Identify the **top 5 most frequently tested or emphasized concepts** based on past papers vs lecture content.
+2. For each concept, provide a **short, simple, and student-friendly explanation**.
+3. Be concise, clear, and avoid unnecessary jargon.
+4. Format the response using the structure below:
+
+**📌 KEY CONCEPTS:**
+- List the 5 concepts clearly in bullet form.
+
+**📘 EXPLANATIONS:**
+For each key concept, provide:
+Concept Name:
+Short Explanation (2–3 sentences max).
+
+Ensure the formatting is clean and easy for students to read and revise.
+Lecture Notes:
+    {lecture_text[:]}
+
+    Past Paper:
+    {pastpaper_text[:]}
+    """
+
+    response = model.generate_content(prompt)
+    return response.text
+def  generate_practice_questions(lecture_text,pastpaper_text):
+    prompt = f"""
+    You are an expert academic examiner and educational AI. Carefully analyze and compare the concepts that appear in BOTH the lecture notes and past papers provided below. From the overlapping or recurring concepts:
+
+    ✅ Generate exactly **30 well-structured, high-quality exam-style questions**.
+    ✅ Use a natural mix of question types, such as:
+       - Short-answer questions
+       - Structured/descriptive questions
+       - Calculation or problem-solving questions (ONLY if applicable to the subject)
+    ✅ Include a natural progression of difficulty (a blend of easier, moderately challenging, and advanced questions), but do NOT label or categorize difficulty levels.
+    ✅ Ensure conceptual coverage is broad yet focused on repeated topics.
+    ✅ Questions should feel professionally set, as in a formal college/university exam.
+    ✅ DO NOT include multiple-choice questions.
+    ✅ DO NOT provide any answers.
+
+    📘 Format your response clearly as:
+
+    **📚 EXAM QUESTION SET (30 Questions):**
+
+    1. ...
+    2. ...
+    3. ...
+    ...
+    30. ...
+
+    ---
+
+    Here are the lecture notes:
+    {lecture_text[:]}
+
+    Here are the past papers:
+    {pastpaper_text[:]}
+    """
+
+    response = model.generate_content(prompt)
+    return response.text
+
+
 
 
 if lecture_file and pastpaper_file:
     lecture_text = extract_text(lecture_file)
     pastpaper_text = extract_text(pastpaper_file)
-    st.write("### Analyzing with Gemini AI...")
-    result = compare_texts(lecture_text, pastpaper_text)
+    practice_questions = generate_practice_questions(lecture_text, pastpaper_text)
+    st.subheader("Analyzing with AI — sit back, relax, and let me do the work...")
+    result = extract_study_topics(lecture_text, pastpaper_text)
+    st.subheader("Your personalized study guide is ready — time to grow smarter.")
+    st.subheader("Here’s what I found:")
     st.write(result)
+    def simplify(lecture_text,pastpaper_text):
+        prompt = f"""
+        You are a patient tutor who explains concepts in the simplest way possible using real-life analogies, examples, and step-by-step breakdowns. Assume the learner is a slow learner.
+
+        Using the results below, explain each concept clearly in everyday language:
+
+        RESULTS:
+        {result}
+
+        Now, based on the context in the lecture notes and past papers, further clarify using relatable analogies:
+
+        LECTURE NOTES:
+        {lecture_text}
+
+        PAST PAPERS:
+        {pastpaper_text}
+
+        ✅ Your task:
+        1. For each concept in the results, explain it as if teaching a slow learner.
+        2. Use at least one everyday analogy for each concept.
+        3. Break complex concepts into smaller steps.
+        4. Give an easy example a high school student can understand.
+        5. Keep explanations short, friendly, and encouraging.
+
+        📘 Format like this:
+
+        **Concept Name:**
+        🔹 Simple Explanation:
+        🔹 Analogy (real-life comparison):
+        🔹 Example:
+        🔹 Why it matters:
+
+        Make it feel like a supportive tutor is guiding the student gently.
+        """
+
+        response = model.generate_content(prompt)
+        return response.text
+
+
+    if st.button("🔍Simplify Explanation"):
+        result=simplify(lecture_text, pastpaper_text)
+        st.write(result)
+    st.download_button(
+      label="📥 Download Practice Questions",
+      data=practice_questions,
+      file_name="practice_questions.txt",
+      mime="text/plain"
+      )
+
+st.markdown("""
+<div style='text-align: center; padding-top: 30px; color: gray; font-size: 14px;'>
+    🛠️ Built by <b>Papa Yego</b>
+</div>
+""", unsafe_allow_html=True)
+
+
+
 
