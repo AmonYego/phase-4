@@ -4,3 +4,4 @@ pandas
 openai
 google.generativeai
 python-docx
+

@@ -1,5 +1,5 @@
 import streamlit as st
-from PyPDF2 import PdfReader, PdfFileReader
+from PyPDF2 import PdfReader
 import google.generativeai as genai
 from docx import Document
 from streamlit import spinner
@@ -27,28 +27,34 @@ if mode == "📄 Analyze Notes/Past Papers":
     lecture_file = st.file_uploader("📘 Upload Lecture Notes (PDF, TXT, or DOCX)", type=["pdf", "txt", "docx"])
     pastpaper_file = st.file_uploader("📄 Upload Past Papers/Exams (PDF, TXT, or DOCX)", type=["pdf", "txt", "docx"])
 
-    def extract_text(file):
-        extension = file.name.split(".")[-1].lower()
 
-        if extension == "pdf":
-            reader = PdfReader(file)
+    def extract_text(uploaded_file):
+        if uploaded_file is None:
+            return ""
+
+        # Get file type
+        file_type = uploaded_file.name.split(".")[-1].lower()
+
+        # If it's a TXT file
+        if file_type == "txt":
+            return uploaded_file.read().decode("utf-8", errors="ignore")
+
+        # If it's a PDF file
+        elif file_type == "pdf":
+            reader = PdfReader(uploaded_file)
             text = ""
             for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text + "\n"
+                text += page.extract_text() + "\n"
             return text
 
-        elif extension == "txt":
-            return file.read().decode("utf-8")
-
-        elif extension == "docx":
-            doc = Document(file)
+        # If it's a DOCX file
+        elif file_type == "docx":
+            doc = Document(uploaded_file)
             text = "\n".join([para.text for para in doc.paragraphs])
             return text
 
         else:
-            return "Unsupported file format."
+            return "Unsupported file type"
 
 
     def extract_study_topics(lecture_text, pastpaper_text):
@@ -253,28 +259,34 @@ elif mode=="Mark My Answers":
         response = model.generate_content(prompt)
         return response.text
 
-    def extract_text(file):
-        extension = file.name.split(".")[-1].lower()
 
-        if extension == "pdf":
-            reader = PdfReader(file)
+    def extract_text(uploaded_file):
+        if uploaded_file is None:
+            return ""
+
+        # Get file type
+        file_type = uploaded_file.name.split(".")[-1].lower()
+
+        # If it's a TXT file
+        if file_type == "txt":
+            return uploaded_file.read().decode("utf-8", errors="ignore")
+
+        # If it's a PDF file
+        elif file_type == "pdf":
+            reader = PdfReader(uploaded_file)
             text = ""
             for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text + "\n"
+                text += page.extract_text() + "\n"
             return text
 
-        elif extension == "txt":
-            return file.read().decode("utf-8")
-
-        elif extension == "docx":
-            doc = Document(file)
+        # If it's a DOCX file
+        elif file_type == "docx":
+            doc = Document(uploaded_file)
             text = "\n".join([para.text for para in doc.paragraphs])
             return text
 
         else:
-            return "Unsupported file format."
+            return "Unsupported file type"
 
 
     if quiz:
