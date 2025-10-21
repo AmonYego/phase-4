@@ -3,3 +3,4 @@ PyPDF2
 pandas
 openai
 google.generativeai
+python-docx
