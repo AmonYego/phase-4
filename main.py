@@ -291,11 +291,12 @@ elif mode=="Mark My Answers":
 
     if quiz:
         st.subheader("🧠 Let’s see how you performed — AI is marking your paper...")
-        with spinner("AI is marking your answers... "):
+        with spinner("⏳ Sit tight — AI is reviewing your answers. This may take a moment..."):
             question_file = extract_text(quiz)
             result=answer_questions(question_file)
-            st.success("Your questions have been marked successfully.")
-            st.subheader("Your Answers have been marked look at how you scored")
+            st.success("✅ Marking complete!")
+            st.subheader("📊 Here’s your score and detailed feedback — let’s see how you performed!")
+
             st.balloons()
             st.write(result)
 
