@@ -290,6 +290,7 @@ elif mode=="Mark My Answers":
 
 
     if quiz:
+        st.subheader("🧠 Let’s see how you performed — AI is marking your paper...")
         with spinner("AI is marking your answers... "):
             question_file = extract_text(quiz)
             result=answer_questions(question_file)
