@@ -1,55 +1,86 @@
 import streamlit as st
-from PyPDF2 import PdfReader
+from PyPDF2 import PdfReader, PdfFileReader
 import google.generativeai as genai
-import time
+from docx import Document
+from streamlit import spinner
 
 st.set_page_config(page_title="ClassRoom AI", page_icon="🎓")
-st.title("ClassRoom AI")
-st.header("Ace your exams — Revise Like a Pro with AI")
-st.write("Upload your class notes and past papers for AI-powered topic analysis, simple explanations, and smart practice questions — or chat directly with the AI to get instant help, explanations, and revision support.")
+st.markdown("""
+<div style='display: flex; justify-content: space-between; align-items: center; padding-top: 30px; color: gray; font-size: 14px;'>
+    <div style='text-align: left;'><b>©Yego Senior</b></div>
+    <div style='text-align: center;'><b>🏆Helping you drive good grades home🎓.</b></div>
+    <div style='text-align: right;'><b>©ClassRoom AI🎓</b></div>
+</div>
+""", unsafe_allow_html=True)
+
+
+st.markdown("<h1 style='text-align: center; color: #2E86C1;'>ClassRoom AI🎓</h1>", unsafe_allow_html=True)
+
+st.markdown("<h3 style='text-align: center;'>Ace your exams — Revise Like a Pro with AI</h3>", unsafe_allow_html=True)
+
+st.write("Upload your class notes and past papers for AI-powered topic analysis, simple explanations, and smart practice questions — get your answered papers marked instantly with AI, or chat directly for explanations, help, and revision support.")
 genai.configure(api_key="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA")
 model = genai.GenerativeModel("gemini-2.5-flash")
-mode = st.radio("Choose a mode:", ["📄 Analyze Notes/Past Papers", "💬 Ask AI a Question"])
+mode = st.radio("Choose a mode:", ["📄 Analyze Notes/Past Papers", "💬 Ask AI a Question","Mark My Answers"])
 
 if mode == "📄 Analyze Notes/Past Papers":
-   lecture_file = st.file_uploader("📘 Upload Lecture Notes (PDF)", type="pdf")
-   pastpaper_file = st.file_uploader("📄 Upload Past Papers/Exams (PDF)", type="pdf")
-   def extract_text(pdf):
-       reader = PdfReader(pdf)
-       text = ""
-       for page in reader.pages:
-           text += page.extract_text() + "\n"
-       return text
-   def extract_study_topics(lecture_text, pastpaper_text):
+    lecture_file = st.file_uploader("📘 Upload Lecture Notes (PDF, TXT, or DOCX)", type=["pdf", "txt", "docx"])
+    pastpaper_file = st.file_uploader("📄 Upload Past Papers/Exams (PDF, TXT, or DOCX)", type=["pdf", "txt", "docx"])
+
+    def extract_text(file):
+        extension = file.name.split(".")[-1].lower()
+
+        if extension == "pdf":
+            reader = PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+            return text
+
+        elif extension == "txt":
+            return file.read().decode("utf-8")
+
+        elif extension == "docx":
+            doc = Document(file)
+            text = "\n".join([para.text for para in doc.paragraphs])
+            return text
+
+        else:
+            return "Unsupported file format."
+
+
+    def extract_study_topics(lecture_text, pastpaper_text):
        prompt = f"""
-   You are an educational AI assistant. Compare the following documents (lecture notes and past papers) and perform the following:
-
-   1. Identify the **top 5 most frequently tested or emphasized concepts** based on past papers vs lecture content.
-   2. For each concept, provide a **short, simple, and student-friendly explanation**.
-   3. Be concise, clear, and avoid unnecessary jargon.
-   4. Format the response using the structure below:
-
-   **📌 KEY CONCEPTS:**
-   - List the 5 concepts clearly in bullet form.
-
-   **📘 EXPLANATIONS:**
-   For each key concept, provide:
-   Concept Name:
-   Short Explanation (2–3 sentences max).
-
-   Ensure the formatting is clean and easy for students to read and revise.
-   Lecture Notes:
-       {lecture_text[:]}
-
-       Past Paper:
-       {pastpaper_text[:]}
-       """
+       You are an educational AI assistant. Compare the following documents (lecture notes and past papers) and perform the following:
+    
+       1. Identify the **top 5 most frequently tested or emphasized concepts** based on past papers vs lecture content.
+       2. For each concept, provide a **short, simple, and student-friendly explanation**.
+       3. Be concise, clear, and avoid unnecessary jargon.
+       4. Format the response using the structure below:
+    
+       **📌 KEY CONCEPTS:**
+       - List the 5 concepts clearly in bullet form.
+    
+       **📘 EXPLANATIONS:**
+       For each key concept, provide:
+       Concept Name:
+       Short Explanation (2–3 sentences max).
+    
+       Ensure the formatting is clean and easy for students to read and revise.
+       Lecture Notes:
+           {lecture_text[:]}
+    
+           Past Paper:
+           {pastpaper_text[:]}
+           """
 
        response = model.generate_content(prompt)
        return response.text
 
-   def simplify(lecture_text, pastpaper_text):
-       prompt = f"""
+    def simplify(lecture_text, pastpaper_text):
+        prompt = f"""
           You are a patient tutor who explains concepts in the simplest way possible using real-life analogies, examples, and step-by-step breakdowns. Assume the learner is a slow learner.
 
           Using the results below, explain each concept clearly in everyday language:
@@ -83,48 +114,47 @@ if mode == "📄 Analyze Notes/Past Papers":
           Make it feel like a supportive tutor is guiding the student gently.
           """
 
-       response = model.generate_content(prompt)
-       return response.text
+        response = model.generate_content(prompt)
+        return response.text
 
-
-   def generate_practice_questions(lecture_text, pastpaper_text):
+    def generate_practice_questions(lecture_text, pastpaper_text):
        prompt = f"""
-       You are an expert academic examiner and educational AI. Carefully analyze and compare the concepts that appear in BOTH the lecture notes and past papers provided below. From the overlapping or recurring concepts:
-
-       ✅ Generate exactly **30 well-structured, high-quality exam-style questions**.
-       ✅ Use a natural mix of question types, such as:
-          - Short-answer questions
-          - Structured/descriptive questions
-          - Calculation or problem-solving questions (ONLY if applicable to the subject)
-       ✅ Include a natural progression of difficulty (a blend of easier, moderately challenging, and advanced questions), but do NOT label or categorize difficulty levels.
-       ✅ Ensure conceptual coverage is broad yet focused on repeated topics.
-       ✅ Questions should feel professionally set, as in a formal college/university exam.
-       ✅ DO NOT include multiple-choice questions.
-       ✅ DO NOT provide any answers.
-
-       📘 Format your response clearly as:
-
-       **📚 EXAM QUESTION SET (30 Questions):**
-
-       1. ...
-       2. ...
-       3. ...
-       ...
-       30. ...
-
-       ---
-
-       Here are the lecture notes:
-       {lecture_text[:]}
-
-       Here are the past papers:
-       {pastpaper_text[:]}
-       """
+                You are an expert academic examiner and educational AI. Carefully analyze and compare the concepts that appear in BOTH the lecture notes and past papers provided below. From the overlapping or recurring concepts:
+        
+               ✅ Generate exactly **30 well-structured, high-quality exam-style questions**.
+               ✅ Use a natural mix of question types, such as:
+                  - Short-answer questions
+                  - Structured/descriptive questions
+                  - Calculation or problem-solving questions (ONLY if applicable to the subject)
+               ✅ Include a natural progression of difficulty (a blend of easier, moderately challenging, and advanced questions), but do NOT label or categorize difficulty levels.
+               ✅ Ensure conceptual coverage is broad yet focused on repeated topics.
+               ✅ Questions should feel professionally set, as in a formal college/university exam.
+               ✅ DO NOT include multiple-choice questions.
+               ✅ DO NOT provide any answers.
+        
+               📘 Format your response clearly as:
+        
+               **📚 EXAM QUESTION SET (30 Questions):**
+        
+               1. ...
+               2. ...
+               3. ...
+               ...
+               30. ...
+        
+               ---
+        
+               Here are the lecture notes:
+               {lecture_text[:]}
+        
+               Here are the past papers:
+               {pastpaper_text[:]}
+             """
 
        response = model.generate_content(prompt)
        return response.text
 
-   if lecture_file and pastpaper_file:
+    if lecture_file and pastpaper_file:
            with st.spinner("🤖 AI is thinking... hang tight!"):
                st.success("✅Files received")
                st.subheader("I’m now carefully analyzing your content—this may take a few seconds. ⏳")
@@ -149,8 +179,8 @@ if mode == "📄 Analyze Notes/Past Papers":
                        )
 
 
-   else:
-           st.info("Please upload both files to continue.")
+    else:
+        st.warning("Please upload both files in PDF, TXT, or DOCX format to continue.")
 elif mode == "💬 Ask AI a Question":
 
     # Step 1: Ask for user input
@@ -180,10 +210,94 @@ elif mode == "💬 Ask AI a Question":
             st.success(answer)
         else:
             st.warning("Please enter a question first.")
+elif mode=="Mark My Answers":
+    quiz = st.file_uploader("Upload your answered questions (PDF or TXT)", type=["pdf", "txt"])
 
+    def answer_questions(question_file):
+        prompt = f"""
+            You are a certified examiner. I will give you:
+            1. The answered exam by a student in pdf form. or Answered questions by a student in pdf form.
+            Your task is to:
+            ✅ Mark the student's answer objectively based on the exam standards.  
+            ✅ Give a total score out of the maximum score in the question paper (default is 100 if not provided).  
+            ✅ Highlight what the student did correctly and apllaud them.  
+            ✅ Identify mistakes or missing key points.  
+            ✅ Suggest improvements in simple language.  
+            ✅ Provide a full model answer that would score 10/10.
+            ⚠️ IMPORTANT: Be strict but fair. Use marking scheme principles used in standard KCSE marking or College exams.
+            Exam Question paper/exam:
+                    {question_file}
+            Now provide your result in the following structure:
+            🎯 Score: X/maximum scrore possible then convert it to percentage form
+            ✅ Correct Points:
+            ❌ Mistakes / Missing Points:
+            📘 Suggested Improvements:
+            📍 Model Answer that would score all the marks (Perfect 10/10) or basically what would be the most most suitable answer to score the highest:
+                        """
+        response=model.generate_content(prompt)
+        return response.text
+
+
+    def generating_similar_questions(question_file):
+        prompt = f"""
+        You are an expert KCSE/WAEC question generator.
+        Go through the answers provided by the student in {question_file}and identify every question the student got wrong.
+        Your task is to:
+        ✅ Understand the core concept being tested.  
+        ✅ Generate new exam-style questions that test the same concept.
+        ✅ Ensure each new question has the same difficulty level as the original.
+        ✅ Do NOT provide answers unless I request them separately.
+        ✅ Do NOT repeat or rephrase the original question.
+
+        """
+        response = model.generate_content(prompt)
+        return response.text
+
+    def extract_text(file):
+        extension = file.name.split(".")[-1].lower()
+
+        if extension == "pdf":
+            reader = PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+            return text
+
+        elif extension == "txt":
+            return file.read().decode("utf-8")
+
+        elif extension == "docx":
+            doc = Document(file)
+            text = "\n".join([para.text for para in doc.paragraphs])
+            return text
+
+        else:
+            return "Unsupported file format."
+
+
+    if quiz:
+        with spinner("AI is marking your answers... "):
+            question_file = extract_text(quiz)
+            result=answer_questions(question_file)
+            st.success("Your questions have been marked successfully.")
+            st.subheader("Your Answers have been marked look at how you scored")
+            st.balloons()
+            st.write(result)
+
+            similar = generating_similar_questions(question_file)
+            st.download_button(
+                label="📥 Download Similar Questions",
+                data=similar,
+                file_name="similar_questions.txt",
+                mime="text/plain"
+            )
+    else:
+        st.warning("Please upload your answered questions in PDF, TXT, or DOCX format to continue.")
 st.markdown("""
 <div style='text-align: center; padding-top: 30px; color: gray; font-size: 14px;'>
-    🛠️ Built by <b>Papa Yego</b>
+    🛠️ Built by <b>Papa Yego🐐</b>
 </div>
 """, unsafe_allow_html=True)
 
