@@ -302,7 +302,7 @@ elif mode=="Mark My Answers":
 
             similar = generating_similar_questions(question_file)
             st.download_button(
-                label="📥 Download Similar Questions",
+                label="📥 Download Questions Similar To Those You Got Wrong ",
                 data=similar,
                 file_name="similar_questions.txt",
                 mime="text/plain"
