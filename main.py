@@ -21,9 +21,62 @@ st.markdown("<h3 style='text-align: center;'>Ace your exams — Revise Like a Pr
 st.write("Upload your class notes and past papers for AI-powered topic analysis, simple explanations, and smart practice questions — get your answered papers marked instantly with AI, or chat directly for explanations, help, and revision support.")
 genai.configure(api_key="AIzaSyARKbi8gr-3sLsw5KOEsZMUsudHA53sxBA")
 model = genai.GenerativeModel("gemini-2.5-flash")
-mode = st.radio("Choose a mode:", ["📄 Analyze Notes/Past Papers", "💬 Ask AI a Question","Mark My Answers"])
 
-if mode == "📄 Analyze Notes/Past Papers":
+level = st.selectbox(
+    "📚 Select your education level:",
+    ["-- Select Level --", "Lower Primary (Grade 1-5)", "Upper Primary (Grade 6-9)",
+     "High School (Grade 10-12)", "College/University"]
+)
+
+def get_level_prompt(level):
+    if "Lower Primary" in level:
+        return """
+        The learner is in LOWER PRIMARY (Grade 1-5 in Kenyan CBC).
+        ✅ Use VERY SIMPLE English or Kiswahili-friendly explanations.
+        ✅ Explain like teaching a young child.
+        ✅ Use fun and relatable examples: toys, food, animals, school games, cartoons, family.
+        ✅ Use very short sentences and a friendly, encouraging tone.
+        ✅ Avoid complex terms or deep logic.
+        """
+
+    elif "Upper Primary" in level:
+        return """
+        The learner is in UPPER PRIMARY (Grade 6-9 in Kenyan CBC).
+        ✅ Use simple English with slightly more structure.
+        ✅ Give relatable examples from school life, hobbies, friends, simple science.
+        ✅ Explain concepts step-by-step with basic logic.
+        ✅ Avoid heavy jargon but introduce mildly academic terms.
+        ✅ Tone should be supportive like a helpful school tutor.
+        """
+
+    elif "High School" in level:
+        return """
+        The learner is in HIGH SCHOOL (Grade 10-12 in Kenyan CBC, previously Form 2-4).
+        ✅ Explain concepts clearly as if preparing for KCSE.
+        ✅ Use relatable teenage examples (e.g., sports, daily life, technology, career dreams).
+        ✅ Use moderate academic language but ensure clarity.
+        ✅ Balance simplicity with exam-based depth and reasoning.
+        """
+
+    else:  # College/University
+        return """
+        The learner is a COLLEGE/UNIVERSITY student (Year 1-5).
+        ✅ Use advanced academic and technical explanations.
+        ✅ Provide structured and logical reasoning.
+        ✅ You may introduce theories, formulas, frameworks, or case studies.
+        ✅ Assume some level of critical thinking and curiosity.
+        ✅ Tone can be professional but still clear.
+        """
+
+if level=="-- Select Level --":
+    st.warning("Please select your education level to proceed!")
+
+
+mode = st.radio("Choose Study Mode:", ["📄 Analyze Notes/Past Papers", "💬 Ask AI a Question","Mark My Answers"])
+if mode == "📄 Analyze Notes/Past Papers" and level=="-- Select Level --":
+    st.warning("Please select your education level to proceed!")
+
+elif mode == "📄 Analyze Notes/Past Papers":
     lecture_file = st.file_uploader("📘 Upload Lecture Notes (PDF, TXT, or DOCX)", type=["pdf", "txt", "docx"])
     pastpaper_file = st.file_uploader("📄 Upload Past Papers/Exams (PDF, TXT, or DOCX)", type=["pdf", "txt", "docx"])
 
@@ -59,6 +112,7 @@ if mode == "📄 Analyze Notes/Past Papers":
 
     def extract_study_topics(lecture_text, pastpaper_text):
        prompt = f"""
+       {get_level_prompt(level)}
        You are an educational AI assistant. Compare the following documents (lecture notes and past papers) and perform the following:
     
        1. Identify the **top 5 most frequently tested or emphasized concepts** based on past papers vs lecture content.
@@ -87,6 +141,7 @@ if mode == "📄 Analyze Notes/Past Papers":
 
     def simplify(lecture_text, pastpaper_text):
         prompt = f"""
+        {get_level_prompt(level)}
           You are a patient tutor who explains concepts in the simplest way possible using real-life analogies, examples, and step-by-step breakdowns. Assume the learner is a slow learner.
 
           Using the results below, explain each concept clearly in everyday language:
@@ -125,6 +180,7 @@ if mode == "📄 Analyze Notes/Past Papers":
 
     def generate_practice_questions(lecture_text, pastpaper_text):
        prompt = f"""
+                {get_level_prompt(level)}
                 You are an expert academic examiner and educational AI. Carefully analyze and compare the concepts that appear in BOTH the lecture notes and past papers provided below. From the overlapping or recurring concepts:
         
                ✅ Generate exactly **30 well-structured, high-quality exam-style questions**.
@@ -187,6 +243,9 @@ if mode == "📄 Analyze Notes/Past Papers":
 
     else:
         st.warning("Please upload both files in PDF, TXT, or DOCX format to continue.")
+elif mode == "💬 Ask AI a Question" and level=="-- Select Level --":
+    st.warning("Please select your education level to proceed!")
+
 elif mode == "💬 Ask AI a Question":
 
     # Step 1: Ask for user input
@@ -195,6 +254,7 @@ elif mode == "💬 Ask AI a Question":
     # Step 2: Define the function (outside of button)
     def generate_answer(user_question):
         prompt = f"""
+        {get_level_prompt(level)}
         You are an expert educational AI tutor who explains academic questions clearly and simply.
         The student asked:
 
@@ -216,11 +276,15 @@ elif mode == "💬 Ask AI a Question":
             st.success(answer)
         else:
             st.warning("Please enter a question first.")
+elif mode == "💬 Ask AI a Question" and level=="-- Select Level --":
+    st.warning("Please select your education level to proceed!")
+
 elif mode=="Mark My Answers":
     quiz = st.file_uploader("Upload your answered questions (PDF or TXT)", type=["pdf", "txt"])
 
     def answer_questions(question_file):
         prompt = f"""
+            {get_level_prompt(level)}
             You are a certified examiner. I will give you:
             1. The answered exam by a student in pdf form. or Answered questions by a student in pdf form.
             Your task is to:
@@ -246,6 +310,7 @@ elif mode=="Mark My Answers":
 
     def generating_similar_questions(question_file):
         prompt = f"""
+        {get_level_prompt(level)}
         You are an expert KCSE/WAEC question generator.
         Go through the answers provided by the student in {question_file}and identify every question the student got wrong.
         Your task is to:
